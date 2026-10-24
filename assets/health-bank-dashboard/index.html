@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人健康存摺互動式追蹤儀表板 (Generative UI 範本 - 虛構資料)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN (固定版本 4.4.1) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' },
+            darkbg: '#090d16',
+            cardbg: '#111827'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #090d16; color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- 頂部 Header & 免責聲明 -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-gray-800 gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white">個人健康存摺追蹤儀表板</h1>
+          <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+            離線脫敏完成 (100% 本地)
+          </span>
+          <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-950 text-amber-400 border border-amber-800">
+            測試虛構資料
+          </span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">
+          健保快易通 HTML 離線解析與 Generative UI 視覺化呈現
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="btn-toggle-view" class="px-4 py-2 text-sm font-medium rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition-colors shadow">
+          切換就診溝通卡 (Doctor Brief)
+        </button>
+      </div>
+    </header>
+
+    <!-- 醫療免責聲明 -->
+    <div class="bg-amber-950/40 border border-amber-800/60 rounded-xl p-3.5 text-xs text-amber-200/90 flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div>
+        <span class="font-bold">醫療資訊免責聲明：</span>
+        本儀表板呈現之數據源自離線脫敏測試樣本，所有視覺化指標僅供個人健康追蹤與就診溝通參考，不構成任何醫療診斷、治療建議或處方。指標數值若有異常，請務必諮詢合格主治醫師。
+      </div>
+    </div>
+
+    <!-- 關鍵指標卡 (KPI Summary) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-cardbg border border-gray-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-gray-400 uppercase tracking-wider">檢驗檢查總數</div>
+        <div class="text-2xl font-bold text-white mt-1" id="kpi-total-tests">5 項</div>
+        <div class="text-xs text-gray-500 mt-0.5">最近日期: 2026/03/15</div>
+      </div>
+      <div class="bg-cardbg border border-gray-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-gray-400 uppercase tracking-wider">異常警示項目</div>
+        <div class="text-2xl font-bold text-rose-400 mt-1" id="kpi-abnormal-tests">3 項偏高</div>
+        <div class="text-xs text-rose-500/80 mt-0.5">HbA1c / 血糖 / 膽固醇</div>
+      </div>
+      <div class="bg-cardbg border border-gray-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-gray-400 uppercase tracking-wider">處方藥品品項</div>
+        <div class="text-2xl font-bold text-sky-400 mt-1" id="kpi-total-meds">2 種藥品</div>
+        <div class="text-xs text-gray-500 mt-0.5">處方天數: 28 天慢箋</div>
+      </div>
+      <div class="bg-cardbg border border-gray-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-gray-400 uppercase tracking-wider">主要就醫科別</div>
+        <div class="text-2xl font-bold text-emerald-400 mt-1" id="kpi-department">新陳代謝科</div>
+        <div class="text-xs text-gray-500 mt-0.5">診斷: 第二型糖尿病等</div>
+      </div>
+    </section>
+
+    <!-- 主內容區：儀表板檢視 (預設) -->
+    <div id="view-dashboard" class="space-y-6">
+      <!-- 異常指標警示橫幅 -->
+      <section class="bg-rose-950/20 border border-rose-900/40 rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-rose-400 flex items-center gap-2 mb-3">
+          <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          待追蹤異常指標提示 (需回診討論)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="abnormal-list">
+          <!-- JS 動態填入 -->
+        </div>
+      </section>
+
+      <!-- 圖表區與篩選 -->
+      <section class="bg-cardbg border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>檢驗指標趨勢對照</span>
+            <span class="text-xs text-gray-400 font-normal">（含正常標準區間）</span>
+          </h2>
+          <div class="inline-flex rounded-lg border border-gray-700 bg-gray-900 p-1 text-xs" id="chart-tabs">
+            <button class="px-3 py-1.5 rounded-md font-medium text-white bg-sky-600 transition" data-filter="glucose">血糖組 (HbA1c/Glucose)</button>
+            <button class="px-3 py-1.5 rounded-md font-medium text-gray-400 hover:text-white transition" data-filter="lipid">血脂組 (Chol/TG/HDL)</button>
+          </div>
+        </div>
+        <div class="h-64 w-full">
+          <canvas id="healthTrendChart"></canvas>
+        </div>
+      </section>
+
+      <!-- 檢驗與用藥詳細表格 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 檢驗表格 -->
+        <section class="bg-cardbg border border-gray-800 rounded-xl p-5 shadow-sm">
+          <h3 class="text-base font-bold text-white mb-3">檢驗檢查明細</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 border-b border-gray-800">
+                <tr>
+                  <th class="pb-2">日期</th>
+                  <th class="pb-2">檢驗項目</th>
+                  <th class="pb-2 text-right">結果</th>
+                  <th class="pb-2 text-right">參考值</th>
+                  <th class="pb-2 text-center">判定</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/60" id="lab-table-body">
+                <!-- JS 動態填入 -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 用藥表格 -->
+        <section class="bg-cardbg border border-gray-800 rounded-xl p-5 shadow-sm">
+          <h3 class="text-base font-bold text-white mb-3">門診處方用藥明細</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 border-b border-gray-800">
+                <tr>
+                  <th class="pb-2">日期/科別</th>
+                  <th class="pb-2">藥品名稱</th>
+                  <th class="pb-2">用法用量</th>
+                  <th class="pb-2 text-right">天數</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/60" id="med-table-body">
+                <!-- JS 動態填入 -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 醫病溝通卡檢視 (Doctor Brief Card View - 預設隱藏) -->
+    <div id="view-doctor-brief" class="hidden space-y-6">
+      <div class="bg-sky-950/20 border border-sky-800/60 rounded-xl p-6 shadow-md max-w-3xl mx-auto space-y-6">
+        <div class="flex items-center justify-between border-b border-sky-800/50 pb-4">
+          <div>
+            <h2 class="text-xl font-bold text-white">門診就醫溝通摘要卡 (Doctor Brief)</h2>
+            <p class="text-xs text-sky-300/80 mt-1">供病患回診時向醫師快速展示近期檢驗異常與用藥狀況</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded bg-sky-900/60 text-sky-200 border border-sky-700">一頁式溝通版</span>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <div>
+            <h4 class="text-xs uppercase tracking-wider text-sky-400 font-bold mb-1.5">主要診斷</h4>
+            <p class="text-white font-medium">第二型糖尿病、混合性高脂血症</p>
+          </div>
+
+          <div>
+            <h4 class="text-xs uppercase tracking-wider text-sky-400 font-bold mb-1.5">目前規則服用藥物</h4>
+            <ul class="list-disc list-inside text-gray-200 space-y-1">
+              <li><span class="font-semibold text-white">Metformin 500mg</span>：每日 2 次，每次 1 顆（慢箋 28 天）</li>
+              <li><span class="font-semibold text-white">Atorvastatin 10mg</span>：每日 1 次，每次 1 顆（慢箋 28 天）</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-xs uppercase tracking-wider text-rose-400 font-bold mb-1.5">最近檢驗異常數值</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="p-2.5 rounded bg-gray-900/80 border border-rose-900/40">
+                <div class="text-gray-400">糖化血色素 (HbA1c)</div>
+                <div class="text-lg font-bold text-rose-400">6.8 % <span class="text-xs text-gray-400 font-normal">(標準 4.0-5.6%)</span></div>
+              </div>
+              <div class="p-2.5 rounded bg-gray-900/80 border border-rose-900/40">
+                <div class="text-gray-400">空腹血糖 (Fasting Glucose)</div>
+                <div class="text-lg font-bold text-rose-400">126 mg/dL <span class="text-xs text-gray-400 font-normal">(標準 70-99 mg/dL)</span></div>
+              </div>
+              <div class="p-2.5 rounded bg-gray-900/80 border border-rose-900/40">
+                <div class="text-gray-400">總膽固醇 (Total Cholesterol)</div>
+                <div class="text-lg font-bold text-rose-400">215 mg/dL <span class="text-xs text-gray-400 font-normal">(標準 &lt;200 mg/dL)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xs uppercase tracking-wider text-sky-400 font-bold mb-1.5">病患自述提問筆記</h4>
+            <div class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-300">
+              1. 血糖與糖化血色素偏高，飲食控制後是否需調整 Metformin 劑量？<br>
+              2. 膽固醇 215 偏高，是否需安排進一步動脈硬化或心血管評估？
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 頁尾 -->
+    <footer class="pt-6 border-t border-gray-800/80 text-center text-xs text-gray-500">
+      個人健康存摺 Generative UI 範本 ｜ 100% Client-Side Pure Frontend ｜ ai-inbox
+    </footer>
+  </div>
+
+  <script>
+    // 虛構示範資料 (嚴格符合第 3 項脫敏解析規格)
+    const FAKE_HEALTH_DATA = {
+      patient_info: {
+        name: "[NAME_REDACTED]",
+        id_number: "[ID_REDACTED]",
+        birth_date: "[BIRTHDATE_REDACTED]"
+      },
+      lab_tests: [
+        { date: "2026/03/15", item: "糖化血色素 (HbA1c)", value: 6.8, reference: "4.0-5.6", unit: "%", flag: "高" },
+        { date: "2026/03/15", item: "空腹血糖 (Fasting Glucose)", value: 126.0, reference: "70-99", unit: "mg/dL", flag: "高" },
+        { date: "2026/03/15", item: "總膽固醇 (Total Cholesterol)", value: 215.0, reference: "<200", unit: "mg/dL", flag: "高" },
+        { date: "2026/03/15", item: "三酸甘油脂 (Triglyceride)", value: 140.0, reference: "<150", unit: "mg/dL", flag: "正常" },
+        { date: "2026/03/15", item: "高密度脂蛋白 (HDL-C)", value: 48.0, reference: ">40", unit: "mg/dL", flag: "正常" }
+      ],
+      medications: [
+        { date: "2026/03/15", hospital: "虛構示範教學醫院", department: "新陳代謝科", diagnosis: "第二型糖尿病", drug: "Metformin 500mg", dosage: "每日2次，每次1顆", days: 28 },
+        { date: "2026/03/15", hospital: "虛構示範教學醫院", department: "新陳代謝科", diagnosis: "混合性高脂血症", drug: "Atorvastatin 10mg", dosage: "每日1次，每次1顆", days: 28 }
+      ]
+    };
+
+    // 渲染異常指標
+    const abnormalListEl = document.getElementById('abnormal-list');
+    const abnormalItems = FAKE_HEALTH_DATA.lab_tests.filter(t => t.flag !== '正常');
+    abnormalItems.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'bg-gray-900/90 border border-rose-900/50 rounded-lg p-3 text-xs';
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <span class="font-bold text-gray-200">${t.item}</span>
+          <span class="text-rose-400 font-bold px-1.5 py-0.5 rounded bg-rose-950 border border-rose-800">${t.flag}</span>
+        </div>
+        <div class="mt-2 text-base font-extrabold text-white">${t.value} <span class="text-xs font-normal text-gray-400">${t.unit}</span></div>
+        <div class="text-gray-400 text-xs mt-0.5">正常參考區間: ${t.reference}</div>
+      `;
+      abnormalListEl.appendChild(card);
+    });
+
+    // 渲染檢驗表格
+    const labTbody = document.getElementById('lab-table-body');
+    FAKE_HEALTH_DATA.lab_tests.forEach(t => {
+      const tr = document.createElement('tr');
+      const isAbnormal = t.flag !== '正常';
+      tr.innerHTML = `
+        <td class="py-2.5 text-gray-400">${t.date}</td>
+        <td class="py-2.5 font-medium text-white">${t.item}</td>
+        <td class="py-2.5 text-right font-bold ${isAbnormal ? 'text-rose-400' : 'text-gray-200'}">${t.value} ${t.unit}</td>
+        <td class="py-2.5 text-right text-gray-400">${t.reference}</td>
+        <td class="py-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${isAbnormal ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-gray-800 text-gray-300'}">
+            ${t.flag}
+          </span>
+        </td>
+      `;
+      labTbody.appendChild(tr);
+    });
+
+    // 渲染用藥表格
+    const medTbody = document.getElementById('med-table-body');
+    FAKE_HEALTH_DATA.medications.forEach(m => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2.5">
+          <div class="text-gray-300">${m.date}</div>
+          <div class="text-[11px] text-sky-400">${m.department}</div>
+        </td>
+        <td class="py-2.5">
+          <div class="font-medium text-white">${m.drug}</div>
+          <div class="text-[11px] text-gray-400">${m.diagnosis}</div>
+        </td>
+        <td class="py-2.5 text-gray-300">${m.dosage}</td>
+        <td class="py-2.5 text-right font-semibold text-white">${m.days} 天</td>
+      `;
+      medTbody.appendChild(tr);
+    });
+
+    // Chart.js 趨勢圖表初始化
+    const ctx = document.getElementById('healthTrendChart').getContext('2d');
+    let currentChart = null;
+
+    function renderChart(type) {
+      if (currentChart) currentChart.dispose ? currentChart.dispose() : currentChart.destroy();
+
+      let labels, datasets;
+      if (type === 'glucose') {
+        labels = ['空腹血糖 (mg/dL)', '糖化血色素 HbA1c (%)'];
+        datasets = [{
+          label: '檢驗結果數值',
+          data: [126.0, 6.8],
+          backgroundColor: ['rgba(244, 63, 94, 0.7)', 'rgba(251, 146, 60, 0.7)'],
+          borderColor: ['#f43f5e', '#fb923c'],
+          borderWidth: 1.5,
+          borderRadius: 6
+        }];
+      } else {
+        labels = ['總膽固醇 (mg/dL)', '三酸甘油脂 (mg/dL)', '高密度脂蛋白 (mg/dL)'];
+        datasets = [{
+          label: '血脂指標數值',
+          data: [215.0, 140.0, 48.0],
+          backgroundColor: ['rgba(244, 63, 94, 0.7)', 'rgba(56, 189, 248, 0.7)', 'rgba(52, 211, 153, 0.7)'],
+          borderColor: ['#f43f5e', '#38bdf8', '#34d399'],
+          borderWidth: 1.5,
+          borderRadius: 6
+        }];
+      }
+
+      currentChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111827',
+              borderColor: '#374151',
+              borderWidth: 1,
+              padding: 10
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    renderChart('glucose');
+
+    // 切換圖表 Tab
+    const chartTabBtns = document.querySelectorAll('#chart-tabs button');
+    chartTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        chartTabBtns.forEach(b => {
+          b.className = 'px-3 py-1.5 rounded-md font-medium text-gray-400 hover:text-white transition';
+        });
+        btn.className = 'px-3 py-1.5 rounded-md font-medium text-white bg-sky-600 transition';
+        renderChart(btn.dataset.filter);
+      });
+    });
+
+    // 切換就診溝通卡檢視
+    const btnToggle = document.getElementById('btn-toggle-view');
+    const viewDash = document.getElementById('view-dashboard');
+    const viewBrief = document.getElementById('view-doctor-brief');
+    let isBriefView = false;
+
+    btnToggle.addEventListener('click', () => {
+      isBriefView = !isBriefView;
+      if (isBriefView) {
+        viewDash.classList.add('hidden');
+        viewBrief.classList.remove('hidden');
+        btnToggle.textContent = '返回完整儀表板';
+      } else {
+        viewBrief.classList.add('hidden');
+        viewDash.classList.remove('hidden');
+        btnToggle.textContent = '切換就診溝通卡 (Doctor Brief)';
+      }
+    });
+  </script>
+</body>
+</html>

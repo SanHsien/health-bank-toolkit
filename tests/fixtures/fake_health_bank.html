@@ -1,0 +1,56 @@
+<!--
+  【虛構資料 / SYNTHETIC FICTIONAL DATA ONLY】
+  本檔案為測試專用之虛構假資料樣本，結構仿照健保快易通「檢驗檢查結果」匯出檔：
+  標題表（1 列，含虛構個資）、資料表（單一表頭列 + 資料列，無旗標欄）、註記表。
+  內部所有姓名、身分證字號、出生日期、病歷號、地址、電話、機構與檢驗數值均為隨機捏造，
+  不對應任何真實個人、病患或醫療機構。
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>健康存摺 (虛構測試樣本)</title>
+</head>
+<body>
+  <table>
+    <tr><td>檢驗檢查結果　姓名：王大明　身分證號：A123456789　出生日期：民國75年08月15日　電話：0912-345-678　病歷號：MRN-987654321　地址：台北市中正區忠孝東路一段999號</td></tr>
+  </table>
+
+  <table>
+    <tr>
+      <th>健保署服務單位</th><th>醫事機構</th><th>就醫日期/入院日期</th><th>檢驗(查)日期</th>
+      <th>資料上傳時間</th><th>醫囑代碼</th><th>醫囑名稱</th><th>檢驗項目名稱</th>
+      <th>結果值</th><th>單位</th><th>參考值</th>
+    </tr>
+    <tr>
+      <td>虛構第一業務組</td><td>虛構示範教學醫院</td><td>112/10/12</td><td>112/10/12</td>
+      <td>112/10/14 09:30:00</td><td>TEST-001</td><td>糖化血色素</td><td>HbA1c</td>
+      <td>6.8</td><td>%</td><td>[4.0][5.6]</td>
+    </tr>
+    <tr>
+      <td>虛構第一業務組</td><td>虛構示範教學醫院</td><td>112/10/12</td><td>112/10/12</td>
+      <td>112/10/14 09:30:00</td><td>TEST-002</td><td>飯前血糖</td><td>Glucose AC</td>
+      <td>92</td><td>mg/dL</td><td>[70][99]</td>
+    </tr>
+    <tr>
+      <td>虛構第一業務組</td><td>虛構示範教學醫院</td><td>112/10/12</td><td>112/10/12</td>
+      <td>112/10/14 09:30:00</td><td>TEST-003</td><td>血鉀</td><td>Potassium</td>
+      <td>3.1</td><td>mmol/L</td><td>[3.5][5.5]</td>
+    </tr>
+    <tr>
+      <td>虛構第一業務組</td><td>虛構示範教學醫院</td><td>112/10/12</td><td>112/10/12</td>
+      <td>112/10/14 09:30:00</td><td>TEST-004</td><td>尿蛋白</td><td>Urine Protein</td>
+      <td>Negative</td><td></td><td>[Negative][]</td>
+    </tr>
+    <tr>
+      <td>虛構第一業務組</td><td>虛構示範教學醫院</td><td>112/10/12</td><td>112/10/12</td>
+      <td>112/10/14 09:30:00</td><td>TEST-005</td><td>低密度脂蛋白</td><td>LDL-C</td>
+      <td>131</td><td>mg/dL</td><td>[][130]</td>
+    </tr>
+  </table>
+
+  <table>
+    <tr><td>註：本表為虛構測試資料，僅供驗證解析流程。</td></tr>
+  </table>
+</body>
+</html>
