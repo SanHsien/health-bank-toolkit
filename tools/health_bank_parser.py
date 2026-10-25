@@ -320,7 +320,7 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     text = re.sub(r"(?<![A-Za-z0-9])\(0\d{1,2}\)\s?\d{3,4}[-\s]?\d{3,4}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]?\d{6,8}", "[PHONE_REDACTED]", text)
     #    區碼與號碼分組寫法（02-2345-6789、049 234 5678）、+886 市話：一定要有分隔符，避免吃到連續數字代碼
-    text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]\d{3,4}[-\s]\d{3,4}(?![0-9])", "[PHONE_REDACTED]", text)
+    text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}(?:-\d{3,4}-\d{3,4}|\s\d{4}\s\d{4})(?![0-9])", "[PHONE_REDACTED]", text)
     text = re.sub(r"\+886[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}(?![0-9])", "[PHONE_REDACTED]", text)
 
     # 3. 生日 (民國或西元年格式)
@@ -1023,9 +1023,10 @@ def _parse_generic(rows: List[List[str]], label: str, diag: Dict[str, int]) -> O
     headers_flat = [_flat(c) or f"col{i + 1}" for i, c in enumerate(head)]
     # 「姓名｜王大明｜生日｜…」這種 key-value 個資列剛好落在表頭位置時，標籤後面的格子是值不是欄名，
     # 不能拿來當輸出的鍵（否則姓名會外洩成 JSON key）。
-    for i in range(1, len(headers_flat)):
-        prev = _norm_header(headers_flat[i - 1]).lower().replace(" ", "")
-        if _KV_PII_LABEL_CELL.match(prev):
+    original = list(headers_flat)
+    for i in range(1, len(original)):
+        prev = _norm_header(original[i - 1]).lower().replace(" ", "")
+        if _KV_PII_LABEL_CELL.match(prev) and not _has_pii_label(_norm_header(original[i])):
             headers_flat[i] = f"col{i + 1}"
     headers_norm = [_norm_header(c) for c in headers_flat]
     keys: List[str] = []

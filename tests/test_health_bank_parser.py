@@ -155,6 +155,18 @@ class TestMaskingGapsRound2(unittest.TestCase):
         out = json.dumps(parse_health_bank_html(html), ensure_ascii=False)
         self.assertNotIn("王大明", out)
 
+    def test_pii_columns_after_name_column_stay_fully_redacted(self):
+        for hdr, val in (("生日", "80/01/01"), ("電話", "2345 6789"), ("地址", "中正里5鄰"), ("身分證字號", "Z1234X")):
+            with self.subTest(hdr=hdr):
+                html = doc(table([["姓名", hdr, "次數", "備註"], ["甲", val, "3", "x"]]))
+                out = json.dumps(parse_health_bank_html(html)["generic"], ensure_ascii=False)
+                self.assertNotIn(val, out)
+                self.assertNotIn("甲", out)
+
+    def test_value_cell_two_after_label_is_not_used_as_key(self):
+        html = doc(table([["姓名", "生日", "王大明", "x"], ["a", "b", "c", "d"]]))
+        self.assertNotIn("王大明", json.dumps(parse_health_bank_html(html), ensure_ascii=False))
+
     def test_plain_column_table_with_name_header_keeps_other_headers(self):
         html = doc(table([["姓名", "科別", "次數", "備註"], ["甲", "內科", "3", "x"]]))
         out = json.dumps(parse_health_bank_html(html)["generic"], ensure_ascii=False)
