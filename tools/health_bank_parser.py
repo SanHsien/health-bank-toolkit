@@ -317,6 +317,9 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     text = re.sub(r"(?<![A-Za-z0-9])(?:\+886[-\s]?0?|0)9\d{2}[-\s]?\d{3}[-\s]?\d{3}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])\(0\d{1,2}\)\s?\d{3,4}[-\s]?\d{3,4}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]?\d{6,8}", "[PHONE_REDACTED]", text)
+    #    區碼與號碼分組寫法（02-2345-6789、049 234 5678）、+886 市話：一定要有分隔符，避免吃到連續數字代碼
+    text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]\d{3,4}[-\s]\d{3,4}(?![0-9])", "[PHONE_REDACTED]", text)
+    text = re.sub(r"\+886[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}(?![0-9])", "[PHONE_REDACTED]", text)
 
     # 3. 生日 (民國或西元年格式)
     text = re.sub(

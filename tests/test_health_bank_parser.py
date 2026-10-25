@@ -125,6 +125,21 @@ class TestAnonymizeAndDates(unittest.TestCase):
         self.assertEqual(to_iso("1121012", compact_ok=True), "2023-10-12")
 
 
+class TestMaskingGapsRound2(unittest.TestCase):
+    """第二輪掃描找到的漏遮：每個都是「舊規則漏遮」的反例（虛構號碼）。"""
+
+    def test_landline_with_grouped_separators_is_masked(self):
+        for raw in ("02-2345-6789", "04 2345 6789", "049-234-5678", "+886 2 2345 6789", "+886-2-2345-6789"):
+            with self.subTest(raw=raw):
+                out = anonymize_text(f"聯絡電話：{raw}")
+                self.assertEqual(out, "聯絡電話：[PHONE_REDACTED]")
+
+    def test_grouped_separator_rule_does_not_eat_dates_or_codes(self):
+        for keep in ( "AC04512345", "0.5 mg/dL", "1-2-3"):
+            with self.subTest(keep=keep):
+                self.assertEqual(anonymize_text(keep), keep)
+
+
 class TestLabFlag(unittest.TestCase):
     def flag(self, value, ref):
         return lab_flag(value, ref)[0]
