@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全問題（含脫敏漏遮）
+    url: https://github.com/SanHsien/health-bank-toolkit/security/advisories/new
+    about: 請私下回報，並且不要附上任何真實健康資料。

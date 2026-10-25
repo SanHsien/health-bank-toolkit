@@ -1,4 +1,5 @@
 version: 2
+# fleet-waiver: freshness -- 只用 Python 標準庫，沒有套件 manifest 可以拿來比對宣告下限
 updates:
   # 沒有 pip manifest（只用 Python 標準庫）；受管依賴只有 workflow 引用的 actions
   - package-ecosystem: "github-actions"
