@@ -147,6 +147,20 @@ class TestMaskingGapsRound2(unittest.TestCase):
         self.assertEqual(anonymize_text("身分證 a123456789"), "身分證 [ID_REDACTED]")
         self.assertEqual(anonymize_text("ab123456789"), "ab123456789")  # 長英數串不是身分證
 
+    def test_key_value_row_used_as_header_does_not_leak_value_as_key(self):
+        html = doc(table([["姓名", "王大明", "生日", "民國80年1月1日"], ["註記", "無"]]))
+        out = json.dumps(parse_health_bank_html(html), ensure_ascii=False)
+        self.assertNotIn("王大明", out)
+        html = doc(table([["姓名", "王大明", "性別", "男"], ["檢查", "正常", "備註", "x"]]))
+        out = json.dumps(parse_health_bank_html(html), ensure_ascii=False)
+        self.assertNotIn("王大明", out)
+
+    def test_plain_column_table_with_name_header_keeps_other_headers(self):
+        html = doc(table([["姓名", "科別", "次數", "備註"], ["甲", "內科", "3", "x"]]))
+        out = json.dumps(parse_health_bank_html(html)["generic"], ensure_ascii=False)
+        self.assertIn("內科", out)
+        self.assertNotIn("甲", out)
+
 
 class TestLabFlag(unittest.TestCase):
     def flag(self, value, ref):

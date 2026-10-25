@@ -1021,6 +1021,12 @@ def _parse_generic(rows: List[List[str]], label: str, diag: Dict[str, int]) -> O
         return None
     head = rows[header_idx]
     headers_flat = [_flat(c) or f"col{i + 1}" for i, c in enumerate(head)]
+    # 「姓名｜王大明｜生日｜…」這種 key-value 個資列剛好落在表頭位置時，標籤後面的格子是值不是欄名，
+    # 不能拿來當輸出的鍵（否則姓名會外洩成 JSON key）。
+    for i in range(1, len(headers_flat)):
+        prev = _norm_header(headers_flat[i - 1]).lower().replace(" ", "")
+        if _KV_PII_LABEL_CELL.match(prev):
+            headers_flat[i] = f"col{i + 1}"
     headers_norm = [_norm_header(c) for c in headers_flat]
     keys: List[str] = []
     seen: Dict[str, Any] = {}
