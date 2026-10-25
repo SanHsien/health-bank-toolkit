@@ -139,6 +139,14 @@ class TestMaskingGapsRound2(unittest.TestCase):
             with self.subTest(keep=keep):
                 self.assertEqual(anonymize_text(keep), keep)
 
+    def test_gregorian_ymd_with_han_units_is_masked(self):
+        self.assertEqual(anonymize_text("出生1990年5月12日"), "出生[DATE_MASKED]")
+        self.assertEqual(anonymize_text("2001 年 12 月 3 日"), "[DATE_MASKED]")
+
+    def test_lowercase_id_is_masked(self):
+        self.assertEqual(anonymize_text("身分證 a123456789"), "身分證 [ID_REDACTED]")
+        self.assertEqual(anonymize_text("ab123456789"), "ab123456789")  # 長英數串不是身分證
+
 
 class TestLabFlag(unittest.TestCase):
     def flag(self, value, ref):

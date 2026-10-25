@@ -306,6 +306,8 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
 
     # 1. 台灣身分證字號 (1碼大寫英文字母 + 1碼性別碼1/2/8/9 + 8碼數字)；
     text = re.sub(r"[A-Z][1289]\d{8}", "[ID_REDACTED]", text)
+    #    小寫手打的身分證（前後不可接英數字，避免吃到長代碼）
+    text = re.sub(r"(?<![A-Za-z0-9])[a-z][1289]\d{8}(?![0-9])", "[ID_REDACTED]", text)
     #    舊式外僑居留證（2 碼英文 + 8 碼數字）與醫令碼（如 AC04512345）格式相同，只在有標籤時遮
     text = re.sub(
         r"((?:居留證|居留證號|統一證號|居留證統一證號)(?:碼)?\s*[:：#]?\s*)[A-Z]{2}\d{8}",
@@ -330,6 +332,11 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     text = re.sub(
         r"民國\s*\d{2,3}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{1,2}",
         "[BIRTHDATE_REDACTED]",
+        text,
+    )
+    text = re.sub(
+        r"(?<![0-9])(19\d{2}|20\d{2})\s*年\s*(0?[1-9]|1[0-2])\s*月\s*(0?[1-9]|[12]\d|3[01])\s*日",
+        "[DATE_MASKED]",
         text,
     )
     # 不用 \b：Python 的 \b 把漢字也當成文字字元，「出生1990-05-12」前面沒有邊界而漏遮。
