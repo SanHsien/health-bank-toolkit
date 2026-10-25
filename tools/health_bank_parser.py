@@ -468,8 +468,15 @@ def lab_flag(value_text: Optional[str], reference_text: Optional[str]) -> Tuple[
 # --------------------------------------------------------------------------- #
 
 _PII_LABELS = (
-    "姓名", "身分證", "身份證", "出生", "生日", "電話", "手機", "地址", "住址", "戶籍", "通訊",
+    "姓名", "身分證", "身份證", "出生", "生日", "電話", "手機", "地址", "住址", "戶籍",
     "病歷號", "病歷編號", "信箱", "email", "e-mail",
+)
+
+# key-value 個資表的「標籤格」：整格就是標籤（可帶前後綴與冒號），避免「出生24小時內接種」「電話諮詢費」誤判
+_KV_PII_LABEL_CELL = re.compile(
+    r"^(聯絡|行動|住家|通訊|戶籍|居住)?"
+    r"(姓名|身分證|身份證|出生|生日|電話|手機|地址|住址|戶籍|病歷號|病歷編號|信箱|email|e-mail)"
+    r"(日期|年月日|字號|號碼|號|地址)?[:：]?$"
 )
 
 
@@ -971,9 +978,9 @@ def _is_key_value_pii_table(rows: List[List[str]]) -> bool:
     for row in rows:
         if row is header:
             continue
-        for cell in row:
-            norm = _norm_header(cell).lower()
-            if norm and len(norm) <= 30 and _has_pii_label(norm):
+        for i, cell in enumerate(row[:-1]):
+            norm = _norm_header(cell).lower().replace(" ", "")
+            if _KV_PII_LABEL_CELL.match(norm) and (row[i + 1] or "").strip():
                 return True
     return False
 

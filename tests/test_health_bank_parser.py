@@ -451,6 +451,14 @@ class TestOtherCategories(unittest.TestCase):
         for secret in ("王大明", "A123456789", "70/05/12", "0912345678"):
             self.assertNotIn(secret, dumped)
 
+    def test_label_words_inside_normal_cells_do_not_drop_table(self):
+        # 「出生」「通訊」出現在一般內容裡，不是 key-value 個資表
+        for row in (["B型肝炎疫苗", "113/01/02", "出生24小時內接種"],
+                    ["門診", "113/01/02", "通訊診療"]):
+            normal = table([["項目", "日期", "備註"], row])
+            result = parse_health_bank_html(doc(normal))
+            self.assertEqual(len(result["generic"]), 1, row)
+
     def test_drug_codes_are_not_mistaken_for_phone_numbers(self):
         self.assertEqual(anonymize_text("AC04512345"), "AC04512345")
         self.assertEqual(anonymize_text("BC0123456789X"), "BC0123456789X")
