@@ -459,6 +459,26 @@ class TestOtherCategories(unittest.TestCase):
             result = parse_health_bank_html(doc(normal))
             self.assertEqual(len(result["generic"]), 1, row)
 
+    def test_overflow_cells_in_table_with_pii_column_are_fully_masked(self):
+        # 表格有「姓名」欄時，多出來的格子可能就是姓名（沒有標籤，文字遮罩抓不到）
+        # 解析器以前 4 列中最寬的列為表頭，溢位列要放在第 5 列之後才會走到溢位處理
+        rows = [["姓名", "項目", "日期"]] + [["某甲", "掛號", "113/01/02"]] * 3 + [["王大明", "掛號", "113/01/02", "陳小華"]]
+        result = parse_health_bank_html(doc(table(rows)))
+        self.assertEqual(len(result["generic"][0]["rows"]), 4)  # 確認有解析，不是整張略過
+        dumped = json.dumps(result, ensure_ascii=False)
+        self.assertNotIn("王大明", dumped)
+        self.assertNotIn("陳小華", dumped)
+
+    def test_overflow_cells_without_pii_column_keep_medical_values(self):
+        rows = [["項目", "日期", "備註"]] + [["掛號", "113/01/02", "-"]] * 3 + [["HbA1c", "113/01/02", "6.8", "空腹"]]
+        result = parse_health_bank_html(doc(table(rows)))
+        self.assertEqual(result["generic"][0]["rows"][-1]["_overflow"], ["空腹"])
+
+    def test_resident_certificate_number_needs_label(self):
+        self.assertEqual(anonymize_text("居留證號：AB12345678"), "居留證號：[ID_REDACTED]")
+        self.assertEqual(anonymize_text("統一證號 AB12345678"), "統一證號 [ID_REDACTED]")
+        self.assertEqual(anonymize_text("AC04512345"), "AC04512345")  # 醫令碼不受影響
+
     def test_drug_codes_are_not_mistaken_for_phone_numbers(self):
         self.assertEqual(anonymize_text("AC04512345"), "AC04512345")
         self.assertEqual(anonymize_text("BC0123456789X"), "BC0123456789X")
@@ -763,6 +783,16 @@ class TestCli(unittest.TestCase):
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             rc = hbp.main([str(a) for a in args])
         return rc, out.getvalue(), err.getvalue()
+
+    def test_stale_category_output_from_previous_run_is_removed(self):
+        out_dir = self.tmp / "out"
+        out_dir.mkdir()
+        (out_dir / "medications.json").write_text("[\"上一輪的舊資料\"]", encoding="utf-8")
+        (out_dir / "my-notes.txt").write_text("使用者自己的檔案", encoding="utf-8")
+        rc, stdout, _ = self.run_main(self.src, out_dir)
+        self.assertEqual(rc, 0, stdout)
+        self.assertFalse((out_dir / "medications.json").exists())  # 本次沒有用藥資料
+        self.assertTrue((out_dir / "my-notes.txt").exists())  # 不是本工具的檔案，不刪
 
     def test_writes_one_json_per_category_and_summary(self):
         out_dir = self.tmp / "out"

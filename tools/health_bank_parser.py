@@ -306,6 +306,12 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
 
     # 1. 台灣身分證字號 (1碼大寫英文字母 + 1碼性別碼1/2/8/9 + 8碼數字)；
     text = re.sub(r"[A-Z][1289]\d{8}", "[ID_REDACTED]", text)
+    #    舊式外僑居留證（2 碼英文 + 8 碼數字）與醫令碼（如 AC04512345）格式相同，只在有標籤時遮
+    text = re.sub(
+        r"((?:居留證|居留證號|統一證號|居留證統一證號)(?:碼)?\s*[:：#]?\s*)[A-Z]{2}\d{8}",
+        r"\1[ID_REDACTED]",
+        text,
+    )
 
     # 2. 手機與室內電話（前面緊接英數字的是藥品／醫囑代碼的一部分，例如 AC0xxxxxxx，不是電話）
     text = re.sub(r"(?<![A-Za-z0-9])(?:\+886[-\s]?0?|0)9\d{2}[-\s]?\d{3}[-\s]?\d{3}", "[PHONE_REDACTED]", text)
@@ -559,6 +565,17 @@ def column_kind(header_norm: str) -> str:
     if any(w in header_norm for w in ("機構", "醫院", "院所", "服務單位")):
         return "org"
     return "text"
+
+
+def clean_unaligned(cells: List[str], headers_norm: List[str]) -> List[str]:
+    """對不上欄位的儲存格（溢位、無法對齊的列）。
+
+    表格有個資欄位（姓名、身分證…）時，對不上的格子可能正是那一欄的值，而沒有標籤的純姓名
+    文字遮罩抓不到，所以整格遮掉；表格沒有個資欄位時，只做一般文字遮罩，保留醫療數據。
+    """
+    if any(column_kind(h) == "pii" for h in headers_norm):
+        return [clean_cell(c, "pii") for c in cells]
+    return [clean_cell(c, "text") for c in cells]
 
 
 def clean_cell(value: str, kind: str = "text") -> str:
@@ -858,7 +875,7 @@ def _parse_hierarchical(
             # 次要列出現在預期位置之外：不能當成新的一次就醫
             diag["unmatched_rows"] += 1
             if current is not None:
-                current.setdefault("extra_rows", []).append([clean_cell(c, "text") for c in row])
+                current.setdefault("extra_rows", []).append(clean_unaligned(row, headers_norm))
             continue
         sub = _as_detail_header(row)
         if sub is not None:
@@ -901,7 +918,7 @@ def _parse_hierarchical(
         else:
             diag["unmatched_rows"] += 1
             if current is not None:
-                current.setdefault("extra_rows", []).append([clean_cell(c, "text") for c in row])
+                current.setdefault("extra_rows", []).append(clean_unaligned(row, headers_norm))
             continue
         rec[detail_key] = []
         records.append(rec)
@@ -940,7 +957,7 @@ def _parse_flat(
             diag["irregular_rows"] += 1
         rec = _build_fields(headers_flat, headers_norm, cells)
         if overflow:
-            rec.setdefault("extra", {})["overflow"] = [clean_cell(c, "text") for c in overflow]
+            rec.setdefault("extra", {})["overflow"] = clean_unaligned(overflow, headers_norm)
         if category == "labs":
             raw_value = _flat(cells[idx_value]) if idx_value is not None else ""
             raw_ref = _flat(cells[idx_ref]) if idx_ref is not None else ""
@@ -1014,7 +1031,7 @@ def _parse_generic(rows: List[List[str]], label: str, diag: Dict[str, int]) -> O
             if kind == "date":
                 rec[keys[i] + "_iso"] = to_iso(cleaned, compact_ok=True)
         if len(row) > width:
-            rec["_overflow"] = [clean_cell(c, "text") for c in row[width:]]
+            rec["_overflow"] = clean_unaligned(row[width:], headers_norm)
         out_rows.append(rec)
     return {"source": label or "unknown", "headers": keys, "rows": out_rows}
 
@@ -1288,6 +1305,10 @@ def write_outputs(result: Dict[str, Any], out_dir: Any) -> List[Path]:
     for cat in CATEGORIES:
         if result[cat]:
             dump(f"{cat}.json", result[cat])
+        else:
+            # 這次沒有此類資料：移除上一輪留下的同名輸出，否則會被誤認為本次結果。
+            # 只動本工具自己產生的固定檔名，資料夾裡的其他檔案不碰。
+            (out / f"{cat}.json").unlink(missing_ok=True)
     dump("summary.json", build_summary(result))
     return written
 
