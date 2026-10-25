@@ -14,7 +14,7 @@
 1. **純本地離線運算（100% Client-Side Privacy）**：嚴禁向任何外部伺服器發送使用者健康數據。所有圖表繪製、資料篩選與搜尋均在瀏覽器記憶體內完成。
 2. **醫療免責聲明（Medical Disclaimer）**：在頁首與頁尾顯著標明：「本儀表板僅供個人健康追蹤與就診溝通參考，不構成任何醫療診斷、治療建議或處方。指標異常請務必諮詢專業主治醫師。」
 3. **固定版本 CDN 依賴**：
-   - Tailwind CSS: `https://cdn.tailwindcss.com`
+   - Tailwind CSS: `https://cdn.tailwindcss.com/3.4.1`
    - Chart.js: `https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js`
 4. **指標安全視覺化（Safe Metric Visualization）**：檢驗數值必須對照參考標準值，若偏高或偏低需標註警示顏色，並在折線圖上標出綠色「正常標準值區間帶」。
 5. **醫病溝通卡（Doctor Brief Card）**：提供一鍵切換「就診快速摘要」模式，提煉近期用藥清單、主要診斷與異常檢驗項目，方便長輩或病患在看診時直接向醫師出示。

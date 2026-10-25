@@ -283,6 +283,15 @@ def decode_html_bytes(data: bytes) -> Tuple[str, str]:
 # --------------------------------------------------------------------------- #
 
 
+# 全形英數字 → 半形（一對一，字串長度不變）
+_FULLWIDTH_ALNUM = {
+    **{0xFF10 + i: 0x30 + i for i in range(10)},
+    **{0xFF21 + i: 0x41 + i for i in range(26)},
+    **{0xFF41 + i: 0x61 + i for i in range(26)},
+    0xFF0D: 0x2D,
+}
+
+
 def anonymize_text(text: str, addresses: bool = True) -> str:
     """全面脫敏個人敏感識別資訊 (PII)。
 
@@ -292,11 +301,15 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     if not text:
         return text
 
-    # 1. 台灣身分證字號 (1碼大寫英文字母 + 1碼性別碼1/2/8/9 + 8碼數字)
+    # 0. 全形英數字與連字號先轉半形（長度不變），否則「Ａ１２３４５６７８９」之類寫法會躲過下列規則
+    text = text.translate(_FULLWIDTH_ALNUM)
+
+    # 1. 台灣身分證字號 (1碼大寫英文字母 + 1碼性別碼1/2/8/9 + 8碼數字)；
     text = re.sub(r"[A-Z][1289]\d{8}", "[ID_REDACTED]", text)
 
     # 2. 手機與室內電話（前面緊接英數字的是藥品／醫囑代碼的一部分，例如 AC0xxxxxxx，不是電話）
-    text = re.sub(r"(?<![A-Za-z0-9])09\d{2}[-\s]?\d{3}[-\s]?\d{3}", "[PHONE_REDACTED]", text)
+    text = re.sub(r"(?<![A-Za-z0-9])(?:\+886[-\s]?0?|0)9\d{2}[-\s]?\d{3}[-\s]?\d{3}", "[PHONE_REDACTED]", text)
+    text = re.sub(r"(?<![A-Za-z0-9])\(0\d{1,2}\)\s?\d{3,4}[-\s]?\d{3,4}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]?\d{6,8}", "[PHONE_REDACTED]", text)
 
     # 3. 生日 (民國或西元年格式)
@@ -306,13 +319,24 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
         text,
     )
     text = re.sub(
-        r"\b(19\d{2}|20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b",
+        r"民國\s*\d{2,3}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{1,2}",
+        "[BIRTHDATE_REDACTED]",
+        text,
+    )
+    # 不用 \b：Python 的 \b 把漢字也當成文字字元，「出生1990-05-12」前面沒有邊界而漏遮。
+    text = re.sub(
+        r"(?<![0-9])(19\d{2}|20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])(?![0-9])",
         "[DATE_MASKED]",
         text,
     )
 
-    # 4. 病歷號 (常見格式 MRN-xxxx 或病歷號標籤後數字)
+    # 4. 病歷號 (MRN-xxxx，或「病歷號／病歷編號／病歷號碼」標籤後的代碼)
     text = re.sub(r"MRN-[A-Za-z0-9\-]+", "[RECORD_NO_REDACTED]", text)
+    text = re.sub(
+        r"(病歷(?:號碼|編號|號)\s*[:：#]?\s*)[A-Za-z0-9][A-Za-z0-9\-]*",
+        r"\1[RECORD_NO_REDACTED]",
+        text,
+    )
 
     # 5. 地址特徵 (含縣/市/區/鄉/鎮/路/街/段/號)
     if addresses:
@@ -443,7 +467,10 @@ def lab_flag(value_text: Optional[str], reference_text: Optional[str]) -> Tuple[
 # 欄位辨識
 # --------------------------------------------------------------------------- #
 
-_PII_LABELS = ("姓名", "身分證", "身份證", "出生", "生日", "電話", "手機", "地址", "病歷號", "病歷編號")
+_PII_LABELS = (
+    "姓名", "身分證", "身份證", "出生", "生日", "電話", "手機", "地址", "住址", "戶籍", "通訊",
+    "病歷號", "病歷編號", "信箱", "email", "e-mail",
+)
 
 
 def _flat(text: str) -> str:
@@ -932,6 +959,25 @@ def _has_pii_label(header_norm: str) -> bool:
     return any(label in header_norm for label in _PII_LABELS)
 
 
+def _is_key_value_pii_table(rows: List[List[str]]) -> bool:
+    """多欄的「標籤｜值｜標籤｜值」個人資料表：除了表頭列以外，還有別的列出現個資標籤。
+
+    一般欄式表格的個資標籤只會出現在表頭列（該欄會被整欄遮蔽）；標籤出現在資料列代表這是
+    key-value 排版，值（姓名、生日…）若被當成表頭欄名或資料輸出就會外洩，整張丟棄。
+    """
+    window = rows[:4]
+    width = max(len(r) for r in window)
+    header = next(r for r in window if len(r) == width)
+    for row in rows:
+        if row is header:
+            continue
+        for cell in row:
+            norm = _norm_header(cell).lower()
+            if norm and len(norm) <= 30 and _has_pii_label(norm):
+                return True
+    return False
+
+
 def _parse_generic(rows: List[List[str]], label: str, diag: Dict[str, int]) -> Optional[Dict[str, Any]]:
     window = rows[:4]
     width = max(len(r) for r in window)
@@ -1016,6 +1062,9 @@ def _process_table(rows: List[List[str]], label: str, result: Dict[str, Any], di
             return
         if max(len(r) for r in rows) <= 3 and any(_has_pii_label(_norm_header(r[0])) for r in rows):
             diag["ignored_tables"] += 1  # 姓名／身分證等 key-value 個人資料表
+            return
+        if _is_key_value_pii_table(rows):
+            diag["ignored_tables"] += 1
             return
         generic = _parse_generic(rows, label, diag)
         if generic is not None:
@@ -1277,11 +1326,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     try:
         result = parse_path(args.input)
-    except (FileNotFoundError, ValueError) as e:  # EncryptedArchiveError 是 ValueError
+    except (OSError, ValueError) as e:  # FileNotFoundError 是 OSError；EncryptedArchiveError 是 ValueError
         print(f"錯誤：{e}", file=sys.stderr)
         return 2
 
-    written = write_outputs(result, out_dir)
+    try:
+        written = write_outputs(result, out_dir)
+    except OSError as e:
+        print(f"錯誤：無法寫入輸出資料夾 {out_dir}：{e}", file=sys.stderr)
+        return 2
     summary = build_summary(result)
     print(f"脫敏解析完成：已寫入 {len(written)} 個檔案至 {out_dir}")
     for cat, n in summary["counts"].items():

@@ -134,4 +134,4 @@ tags:
     3. 納入醫療免責聲明與資料純本地運算原則（零外部上傳），相容於 Claude Artifact 與 Antigravity Generative UI。
   - **驗收標準（DoD）**：產出之單檔 HTML 在瀏覽器與 Generative UI 中能正確載入乾淨 JSON 並流暢切換指標圖表，驗證無控制台錯誤，並通過 `python tools/verify_inbox.py`。
   - **完成日期**：2026-10-23
-  - **實作紀錄 / 證據**：以 ai-inbox 範本形式交付。設計標準提示詞範本 `templates/health-bank-dashboard-prompt.md` 與單檔 Generative UI 互動儀表板 `assets/health-bank-dashboard/index.html`（純虛構示範資料、Tailwind + Chart.js 4.4.1 CDN、含 Doctor Brief Card 與本地免責聲明）。
+  - **實作紀錄 / 證據**：以 ai-inbox 範本形式交付。設計標準提示詞範本 `templates/health-bank-dashboard-prompt.md` 與單檔 Generative UI 互動儀表板 `assets/health-bank-dashboard/index.html`（純虛構示範資料、Tailwind + Chart.js 4.4.1 CDN、含 Doctor Brief Card 與本地免責聲明）。**覆核實測（2026-10-25）**：以瀏覽器開啟 `file://` 實跑，圖表與指標卡正常渲染，切換 Doctor Brief 後主控台零錯誤。

@@ -410,6 +410,47 @@ class TestOtherCategories(unittest.TestCase):
         self.assertNotIn("王大明", dumped)
         self.assertNotIn("A123456789", dumped)
 
+    def test_anonymize_catches_pii_after_cjk_fullwidth_and_labelled_ids(self):
+        # 漢字緊接西元生日（舊的 \b 在這裡不成立，會漏遮）
+        self.assertEqual(anonymize_text("出生1990-05-12就醫"), "出生[DATE_MASKED]就醫")
+        # 全形英數身分證
+        self.assertEqual(anonymize_text("Ａ１２３４５６７８９"), "[ID_REDACTED]")
+        # 標籤後的病歷號
+        self.assertEqual(anonymize_text("病歷號：12345678"), "病歷號：[RECORD_NO_REDACTED]")
+        self.assertEqual(anonymize_text("病歷編號 AB-12"), "病歷編號 [RECORD_NO_REDACTED]")
+        # 括號區碼、+886 手機、民國斜線生日
+        self.assertEqual(anonymize_text("(02)2345-6789"), "[PHONE_REDACTED]")
+        self.assertEqual(anonymize_text("+886-912-345-678"), "[PHONE_REDACTED]")
+        self.assertEqual(anonymize_text("民國70/05/12"), "[BIRTHDATE_REDACTED]")
+        # 不該誤殺：沒有 0 開頭的 9 位數字、一般檢驗數值
+        self.assertEqual(anonymize_text("號碼9123456789"), "號碼9123456789")
+        self.assertEqual(anonymize_text("血糖 5.6 mg/dL"), "血糖 5.6 mg/dL")
+
+    def test_roc_year_boundaries_leap_and_empty(self):
+        self.assertEqual(to_iso("99/12/31"), "2010-12-31")   # 民國 99 → 100 年交界
+        self.assertEqual(to_iso("100/1/1"), "2011-01-01")
+        self.assertEqual(to_iso("113/2/29"), "2024-02-29")   # 閏年
+        self.assertIsNone(to_iso("112/2/29"))                # 非閏年
+        self.assertIsNone(to_iso("100/2/29"))                # 2011 非閏年
+        self.assertEqual(to_iso("89/2/29"), "2000-02-29")    # 2000 是閏年（世紀閏年）
+        self.assertEqual(to_iso("1131231", compact_ok=True), "2024-12-31")
+        self.assertIsNone(to_iso("1000229", compact_ok=True))
+        self.assertIsNone(to_iso("112/10/12 24:00"))
+        for empty in (None, "", "   "):
+            self.assertIsNone(to_iso(empty))
+
+    def test_key_value_personal_table_with_four_columns_is_dropped(self):
+        # 四欄 key-value 個資表（標籤｜值｜標籤｜值）：舊版會把「值」當成欄名輸出
+        kv = table([
+            ["姓名", "王大明", "身分證字號", "A123456789"],
+            ["出生日期", "70/05/12", "電話", "0912345678"],
+        ])
+        result = parse_health_bank_html(doc(kv))
+        dumped = json.dumps(result, ensure_ascii=False)
+        self.assertEqual(result["generic"], [])
+        for secret in ("王大明", "A123456789", "70/05/12", "0912345678"):
+            self.assertNotIn(secret, dumped)
+
     def test_drug_codes_are_not_mistaken_for_phone_numbers(self):
         self.assertEqual(anonymize_text("AC04512345"), "AC04512345")
         self.assertEqual(anonymize_text("BC0123456789X"), "BC0123456789X")
