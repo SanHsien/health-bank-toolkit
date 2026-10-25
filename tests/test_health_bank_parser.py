@@ -163,6 +163,16 @@ class TestMaskingGapsRound2(unittest.TestCase):
                 self.assertNotIn(val, out)
                 self.assertNotIn("甲", out)
 
+    def test_seq_and_org_columns_after_name_column_keep_their_masking(self):
+        html = doc(table([["姓名", "就醫序號", "次數", "備註"], ["甲", "SEQ0042", "3", "x"]]))
+        out = json.dumps(parse_health_bank_html(html)["generic"], ensure_ascii=False)
+        self.assertNotIn("SEQ0042", out)
+
+    def test_mixed_case_email_header_is_a_pii_column(self):
+        html = doc(table([["Email", "科別", "次數", "備註"], ["fake@example.invalid", "內科", "3", "x"]]))
+        out = json.dumps(parse_health_bank_html(html)["generic"], ensure_ascii=False)
+        self.assertNotIn("fake@example.invalid", out)
+
     def test_value_cell_two_after_label_is_not_used_as_key(self):
         html = doc(table([["姓名", "生日", "王大明", "x"], ["a", "b", "c", "d"]]))
         self.assertNotIn("王大明", json.dumps(parse_health_bank_html(html), ensure_ascii=False))
