@@ -22,7 +22,7 @@
 ## 資料
 - 位置：<私人資料夾>/parsed/
 - 先讀 summary.json，再讀各類別 JSON（labs、outpatient、medications、inpatient、surgery、dental、vaccinations、imaging_reports、directives、generic）。
-- 先讀 ai-inbox repo 的 docs/health-bank-export-format.md（https://github.com/SanHsien/ai-inbox/blob/main/docs/health-bank-export-format.md），照裡面的判讀規則處理（尤其第 5、6 節）。
+- 先讀 health-bank-toolkit repo 的 docs/health-bank-export-format.md（https://github.com/SanHsien/health-bank-toolkit/blob/main/docs/health-bank-export-format.md），照裡面的判讀規則處理（尤其第 5、6 節）。
 - 只用這些檔案裡的資料，不要推測沒有出現的資訊，也不要上網查個人資料。
 - 若 summary.json 的 diagnostics 中 short_master_rows、unmatched_rows、orphan_detail_rows 很多，在報告開頭註明「部分資料欄位可能對齊有誤」。
 - 看 summary.json 的 `parser_version`：

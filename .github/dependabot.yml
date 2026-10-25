@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # 沒有 pip manifest（只用 Python 標準庫）；受管依賴只有 workflow 引用的 actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7

@@ -18,6 +18,8 @@ tags:
   - medical-dashboard
 ---
 
+> 📦 **來源紀錄**：本筆記原在 [`SanHsien/ai-inbox`](https://github.com/SanHsien/ai-inbox)，2026-10-25 隨本工具一起搬來，內容保留原樣（任務 T-20261018-13／14 已結案）。文中的 `verify_inbox.py` 等指 ai-inbox 的工具。
+
 # 健保快易通健康存摺 HTML 轉化 Claude Artifact：個人醫療數據本地脫敏與互動式健康追蹤儀表板（Generative UI）實踐解構
 
 - **來源連結**：[Threads 原貼文 (ingramchen)](https://www.threads.com/share/BATf6m8fjz/)
@@ -113,8 +115,6 @@ tags:
 ---
 
 ## 3. 拆解待辦事項（Action Items）
-
-> ⚠️ 狀態變更時，請同步更新根目錄 [`README.md`](../README.md) 的總表。
 
 - [x] **`T-20261018-13`**｜**[優先級：高]** 建立「健保快易通健康存摺離線脫敏與數據解析腳本（Health Bank Anonymizer & Parser）」
   - **目標範圍**：`SanHsien/ai-inbox` 與 本地個人健康工具鏈（`tools/health_bank_parser.py`）

@@ -1,0 +1,22 @@
+# OS & Editor artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Scratch or temporary files
+.scratch/
+tmp/
+*.tmp
+
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+
+# 真實健康存摺資料與解析結果絕不進 repo（工具也會拒絕把輸出寫進 git 工作樹）
+*.zip
+out/
+output/
