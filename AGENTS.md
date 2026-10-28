@@ -14,3 +14,7 @@
 - 改動後執行 `python -m unittest discover -s tests`，全綠才提交（測試與 `git commit` 用 `&&` 串接，不用 `;`）。
 - 不要設 `PYTHONUTF8` 來讓測試通過；Windows 終端的編碼問題要在程式裡處理。
 - 格式或判讀規則有變，同步更新 `docs/health-bank-export-format.md`。
+
+## 路線圖
+
+- `ROADMAP.md` 是本 repo 後續工作的單一真相源。完成或新增工作時，在同一個 commit 更新它：做完的列刪掉、新工作加進去。不要在其他文件另列待辦。
