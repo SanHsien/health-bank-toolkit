@@ -5,13 +5,12 @@
 
 ## 現況
 
-健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-10-29 快照：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次皆 success；無 release。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`），68 個測試綠；沒有已知未修的洩漏路徑。
+健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-10-29 快照：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次皆 success；無 release。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`）；已補入確定性虛構表格脫敏回歸測試（`tests/test_synthetic_tables.py`），70 個測試綠；沒有已知未修的洩漏路徑。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
 | 決定 PDF 報告提示詞要不要保留「一般性健康建議」，並讓範本與鐵律 3 一致 | `templates/health-report-pdf-prompt.md:20` 要求「給一般性的健康建議」，`AGENTS.md` 鐵律 3 寫「不提供醫療建議」，兩者措辭有張力；範本是對外給使用者複製的內容 | 維護者決定後：範本與 `AGENTS.md`／`docs/DECISIONS.md`「範本不下診斷」同一措辭；`tests/test_published_content.py` 新增斷言鎖定該措辭與免責聲明並先確認舊文本會使其失敗；`python -m unittest discover -s tests` 綠 | 維護者（決定）→ Claude Sonnet（改寫＋測試） | `templates/health-report-pdf-prompt.md:20`；`AGENTS.md` 鐵律 3；2026-10-26 專責報告「需要維護者決定」 |
-| 把審查時用的「大量虛構表格對比 origin 版本」做成 repo 內的確定性測試 | 脫敏規則「只能變嚴」目前靠每次人工審查驗證；固化後能機器擋住回歸 | `tests/` 新增以固定隨機種子產生的虛構表格（只用公認假值）；斷言已知會被遮的值在輸出中不以明文出現；在 `338c495` 之前的版本上至少有一條失敗（證明有擋力）；全套測試綠且執行時間不明顯變長；不得引入第三方套件 | Claude Sonnet | 2026-10-26 深掃報告「審查」段（6 萬餘張虛構表格比對）；`AGENTS.md` 鐵律 2、4 |
 | 確認 `ai-inbox` 的 git 歷史只含工具碼、不含真實健康存摺資料 | 本 repo 已獨立；`ai-inbox` 目前追蹤檔已無健康存摺相關檔（2026-10-29 `git ls-files`，`20df187a8306`），但歷史可能仍留有，內容含個資風險 | `git -C <ai-inbox> log --all --name-only --format= \| grep -i health` 的結果逐檔判定（只有工具碼／測試虛構 fixture 即結案），結論寫入本 repo `docs/DECISIONS.md` 一則；若發現真實資料，停下交維護者決定，不得改寫歷史 | Claude Sonnet（盤點）→ 維護者（發現真實資料時決定） | 2026-10-29 `git -C ai-inbox ls-files` 無含 health 的追蹤檔；專責報告（2026-10-26）「需要維護者決定」 |
 
 ## 中期：等條件成立再做
