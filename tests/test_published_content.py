@@ -38,6 +38,30 @@ class PublishedContentTest(unittest.TestCase):
                 text = (ROOT / rel).read_text(encoding="utf-8")
                 self.assertTrue("免責" in text or "不是醫師" in text, rel)
 
+    def test_pdf_report_stays_within_data_summary_scope(self):
+        policy = "不提供醫療建議（含一般性健康建議），不下診斷、不建議調整藥物"
+        for rel in ("AGENTS.md", "docs/DECISIONS.md", "docs/health-bank-export-format.md", "templates/health-report-pdf-prompt.md"):
+            with self.subTest(file=rel):
+                self.assertIn(policy, (ROOT / rel).read_text(encoding="utf-8"))
+
+        prompt = (ROOT / "templates/health-report-pdf-prompt.md").read_text(encoding="utf-8")
+        self.assertIn("醫療免責聲明：本報告僅整理既有資料，不提供醫療建議或診斷；任何用藥或治療調整都要先問醫師。", prompt)
+        for safety in ("出現急性或明顯惡化的症狀時，請立即就醫或撥打 119。", "已在使用的藥物不要自行停用，任何用藥或治療調整都要先問醫師。"):
+            with self.subTest(safety=safety):
+                self.assertIn(safety, prompt)
+        fmt = (ROOT / "docs/health-bank-export-format.md").read_text(encoding="utf-8")
+        for instruction in ("給生活與追蹤建議", "對照公認臨床標準"):
+            with self.subTest(file="format", instruction=instruction):
+                self.assertNotIn(instruction, fmt)
+        for instruction in (
+            "給一般性的健康建議", "健康分析與建議", "優先處理／需要追蹤／目前穩定",
+            "對照公認標準", "給具體做法", "量什麼、多久", "追蹤檢查頻率",
+            "依健康狀態列出", "需要立刻就醫的警訊", "給生活與追蹤建議",
+            "可以提醒按時使用",
+        ):
+            with self.subTest(instruction=instruction):
+                self.assertNotIn(instruction, prompt)
+
     def test_patterns_catch_real_formats(self):
         self.assertEqual(TW_ID.findall("身分證 A123456789"), ["A123456789"])
         self.assertEqual(MOBILE.findall("電話 0912-345-678"), ["0912-345-678"])
