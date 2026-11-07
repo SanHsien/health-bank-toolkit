@@ -23,3 +23,15 @@
 理由：原範本與鐵律 3 的實質內容本就相符，張力只在標題措辭；固定安全提醒補上急性症狀就醫與勿自行停藥兩點，不增加依資料產生的建議。同日稍早一版（895f728b）把決定做成「不輸出一般性健康建議」，是對路線圖列的誤讀，已更正（895f728b → 本次提交）。
 
 重看條件：鐵律 3 日後要再收緊或放寬，需維護者明確修訂並完成醫療專業審查。
+
+## 工具來源 repo 的歷史盤點
+
+### 2026-11-08：`ai-inbox` 歷史只含工具碼與虛構 fixture，結案
+
+維護者授權艦隊規劃長依證據判斷。盤點方式：`git -C ai-inbox log --all --name-only --format=` 去重後以 `health` 篩選（`ai-inbox` HEAD `a0ed09c`），共 8 個路徑：`tools/health_bank_parser.py`、`tests/test_health_bank_parser.py`、`tests/fixtures/fake_health_bank.html`、`templates/health-bank-dashboard-prompt.md`、`templates/health-report-pdf-prompt.md`、`docs/health-bank-export-format.md`、`assets/health-bank-dashboard/index.html`、`notes/2026-10-18-health-bank-html-claude-artifact-dashboard.md`。目前追蹤檔中含 `health` 的為 0；這些路徑在 `44cbd83`（2026-10-25）搬離 `ai-inbox`。
+
+逐檔判定：fixture 與測試只含明顯虛構的值（教科書式的假姓名、假身分證號與假手機號，檔頭註明虛構；此處不重抄，以免本檔觸發公開內容的格式測試）；儀表板範本在歷史上三個版本（`5d75296`、`650f260`、`44cbd83` 刪除）內的資料列以「虛構示範教學醫院」與標題「虛構資料」標示；程式碼與範本只有正規表示式與民國年說明，沒有個人值；`docs/health-bank-export-format.md` 只有格式說明與檔名範例。對儀表板範本（兩個版本）、fixture、測試、格式文件、兩份範本、解析器與筆記共 9 個歷史 blob 做身分證、手機號、民國日期格式掃描，命中的全是虛構值或格式說明。筆記中的實測紀錄寫明真實匯出與輸出只存在 repo 外的本機資料夾。
+
+結論：沒有發現真實健康存摺資料，不需要也不應改寫 `ai-inbox` 歷史。限制：這是格式與標記的掃描加人工讀取，不是對每個字元的證明；若日後有人在任一 repo 提交真實匯出，照 `AGENTS.md` 鐵律 1 處理。
+
+重看條件：`ai-inbox` 歷史出現新的 `health` 路徑，或有人回報其中含真實資料。

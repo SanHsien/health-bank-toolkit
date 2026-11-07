@@ -1,16 +1,16 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 現況段的數字是 2026-10-29 依 `main` `1132890f4969` 查的快照，開工前先重查 GitHub。
+> 現況段的數字是 2026-11-08 依 `main` `aa305b5` 查的快照，開工前先重查 GitHub。
 
 ## 現況
 
-健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-10-29 快照：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次皆 success；無 release。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`）；已補入確定性虛構表格脫敏回歸測試（`tests/test_synthetic_tables.py`），71 個測試綠；沒有已知未修的洩漏路徑。
+健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-11-08 `gh` 查詢：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次（2026-11-02）皆 success；無 release。`ai-inbox` 歷史盤點已結案，只有工具碼與虛構 fixture（`docs/DECISIONS.md`）。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`）；已補入確定性虛構表格脫敏回歸測試（`tests/test_synthetic_tables.py`），71 個測試綠；沒有已知未修的洩漏路徑。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 確認 `ai-inbox` 的 git 歷史只含工具碼、不含真實健康存摺資料 | 本 repo 已獨立；`ai-inbox` 目前追蹤檔已無健康存摺相關檔（2026-10-29 `git ls-files`，`20df187a8306`），但歷史可能仍留有，內容含個資風險 | `git -C <ai-inbox> log --all --name-only --format= \| grep -i health` 的結果逐檔判定（只有工具碼／測試虛構 fixture 即結案），結論寫入本 repo `docs/DECISIONS.md` 一則；若發現真實資料，停下交維護者決定，不得改寫歷史 | Claude Sonnet（盤點）→ 維護者（發現真實資料時決定） | 2026-10-29 `git -C ai-inbox ls-files` 無含 health 的追蹤檔；專責報告（2026-10-26）「需要維護者決定」 |
+| （目前沒有）| 2026-11-08 `ai-inbox` 歷史盤點已結案（`docs/DECISIONS.md`），其餘工作都在下面等觸發條件 | — | — | — |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
