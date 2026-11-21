@@ -1,11 +1,11 @@
 # 路線圖
 
 > 本 repo 後續工作的單一真相源。做完一項，就在同一個 commit 刪掉那一列；新工作只加在這裡。
-> 現況段的數字是 2026-11-08 依 `main` `aa305b5` 查的快照，開工前先重查 GitHub。
+> 現況段的數字是 2026-11-08 依 `main` `aa305b5` 查的快照（測試數與覆核狀態更新於 2026-11-21），開工前先重查 GitHub。
 
 ## 現況
 
-健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-11-08 `gh` 查詢：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次（2026-11-02）皆 success；無 release。`ai-inbox` 歷史盤點已結案，只有工具碼與虛構 fixture（`docs/DECISIONS.md`）。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`）；已補入確定性虛構表格脫敏回歸測試（`tests/test_synthetic_tables.py`），71 個測試綠；沒有已知未修的洩漏路徑。
+健保快易通「健康存摺」離線脫敏解析器：HTML／ZIP／資料夾 → 結構化 JSON，附儀表板與 PDF 報告提示詞，純 Python 標準庫、不主動連網（`tools/health_bank_parser.py`）。2026-11-08 `gh` 查詢：open issue 0、open PR 0；Dependabot 與 code scanning 告警皆 0；`main` 上 CI、CodeQL 最近一次（2026-11-02）皆 success；無 release。`ai-inbox` 歷史盤點已結案，只有工具碼與虛構 fixture（`docs/DECISIONS.md`）。2026-10-26 的深掃已補完四類脫敏漏遮（`CHANGELOG.md`、commits `6976361`..`338c495`）；已補入確定性虛構表格脫敏回歸測試（`tests/test_synthetic_tables.py`）。2026-11-21 獨立覆核（`REVIEW.md`）補了自由文字的標籤式個資、參考值、損毀 ZIP 與輸出權限，85 個測試綠（Windows 上 1 個 POSIX 權限測試略過）；沒有已知未修的洩漏路徑。已知限制：自由文字中沒有標籤的姓名認不出來（`docs/health-bank-export-format.md` §7）。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |

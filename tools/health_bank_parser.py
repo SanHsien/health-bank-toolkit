@@ -33,10 +33,12 @@ import codecs
 import itertools
 import json
 import math
+import os
 import re
 import sys
 import unicodedata
 import zipfile
+import zlib
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
@@ -314,9 +316,15 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
         r"\1[ID_REDACTED]",
         text,
     )
+    #    有標籤、號碼中間夾空白或連字號的身分證（「身分證：A 123 456 789」）
+    text = re.sub(
+        r"((?:身分證|身份證|統一證號|居留證)(?:統一證號|字號|號碼|號)?\s*[:：#]?\s*)[A-Za-z](?:[\s\-]?\d){9}(?![0-9])",
+        r"\1[ID_REDACTED]",
+        text,
+    )
 
     # 2. 手機與室內電話（前面緊接英數字的是藥品／醫囑代碼的一部分，例如 AC0xxxxxxx，不是電話）
-    text = re.sub(r"(?<![A-Za-z0-9])(?:\+886[-\s]?0?|0)9\d{2}[-\s]?\d{3}[-\s]?\d{3}", "[PHONE_REDACTED]", text)
+    text = re.sub(r"(?<![A-Za-z0-9])(?:\+886[-\s.]?0?|0)9\d{2}[-\s.]?\d{3}[-\s.]?\d{3}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])\(0\d{1,2}\)\s?\d{3,4}[-\s]?\d{3,4}", "[PHONE_REDACTED]", text)
     text = re.sub(r"(?<![A-Za-z0-9])0\d{1,2}[-\s]?\d{6,8}", "[PHONE_REDACTED]", text)
     #    區碼與號碼分組寫法（02-2345-6789、02 2345 6789）、+886 市話：一定要有分隔符，避免吃到連續數字代碼
@@ -324,6 +332,12 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     text = re.sub(r"\+886[-\s]?\d{1,2}[-\s]?\d{3,4}[-\s]?\d{3,4}(?![0-9])", "[PHONE_REDACTED]", text)
 
     # 3. 生日 (民國或西元年格式)
+    #    有「出生／生日」標籤的民國短日期（85/05/12、0850512）：沒有「民國」字樣時下面的規則抓不到
+    text = re.sub(
+        r"((?:出生(?:日期|年月日)?|生日)\s*[:：]?\s*)(?:\d{2,3}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{1,2}|\d{6,8})(?![0-9])",
+        r"\1[BIRTHDATE_REDACTED]",
+        text,
+    )
     text = re.sub(
         r"民國\s*\d{2,3}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日",
         "[BIRTHDATE_REDACTED]",
@@ -355,6 +369,13 @@ def anonymize_text(text: str, addresses: bool = True) -> str:
     )
 
     # 5. 地址特徵 (含縣/市/區/鄉/鎮/路/街/段/號)
+    #    有「地址／住址」標籤時，標籤後到下一個空白或分隔符號為止整段遮掉（不需要有區／鄉／鎮）；
+    #    機構欄位也適用，機構名稱不會接在「地址：」後面
+    text = re.sub(
+        r"((?:通訊|戶籍|居住|聯絡|住家)?(?:地址|住址)\s*[:：]?\s*)[^\s,，;；。|｜\[\]]+",
+        r"\1[ADDRESS_REDACTED]",
+        text,
+    )
     if addresses:
         text = re.sub(
             r"[一-龥]{2,3}(縣|市)[一-龥]{1,4}(區|鄉|鎮|市)[一-龥0-9\-段巷弄號]+",
@@ -979,7 +1000,9 @@ def _parse_flat(
             rec["value_raw"] = rec.get("value", "")
             rec["value"] = float(num) if num is not None else rec["value_raw"]
             safe_ref = re.fullmatch(r"(?:\[[^\[\]]{0,40}\])+", unicodedata.normalize("NFKC", raw_ref))
-            rec["reference"] = raw_ref if safe_ref else clean_cell(raw_ref, "text")
+            # 方括號格式只代表「長得像參考值」，內容仍要過一次文字脫敏，沒被改動才保留原字串
+            keep_raw = safe_ref is not None and anonymize_text(raw_ref) == raw_ref
+            rec["reference"] = raw_ref if keep_raw else clean_cell(raw_ref, "text")
             rec["ref_low"] = low
             rec["ref_high"] = high
             rec["flag"] = flag
@@ -1241,8 +1264,12 @@ def _iter_sources(path: Path) -> Iterator[Tuple[str, bytes]]:
             for info in sorted(htmls, key=lambda i: i.filename):
                 if info.file_size > MAX_MEMBER_BYTES:
                     raise ValueError("ZIP 內有過大的 HTML 成員，拒絕解析")
-                with zf.open(info) as fh:
-                    yield Path(info.filename).stem, fh.read()
+                try:
+                    with zf.open(info) as fh:
+                        data = fh.read()
+                except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError) as e:
+                    raise ValueError(f"ZIP 內的 HTML 成員已損毀或使用不支援的壓縮方式，無法解析：{e}") from None
+                yield Path(info.filename).stem, data
     else:
         yield path.stem, path.read_bytes()
 
@@ -1311,12 +1338,18 @@ def find_git_root(path: Any) -> Optional[Path]:
 
 def write_outputs(result: Dict[str, Any], out_dir: Any) -> List[Path]:
     out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    # 新建的資料夾與輸出檔只給擁有者讀寫（POSIX）；Windows 依父資料夾 ACL，mode 只影響唯讀位元
+    out.mkdir(parents=True, exist_ok=True, mode=0o700)
     written: List[Path] = []
 
     def dump(name: str, payload: Any) -> None:
         target = out / name
-        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        data = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0), 0o600)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+        if os.name == "posix":
+            os.chmod(target, 0o600)  # 上一輪留下、權限較寬的同名檔也收緊
         written.append(target)
 
     for cat in CATEGORIES:
@@ -1382,6 +1415,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 2
     summary = build_summary(result)
     print(f"脫敏解析完成：已寫入 {len(written)} 個檔案至 {out_dir}")
+    if not any(summary["counts"].values()):
+        print("警告：沒有解析出任何資料。請確認輸入是健康存摺匯出的 HTML／ZIP。", file=sys.stderr)
     for cat, n in summary["counts"].items():
         if n:
             print(f"  {cat}: {n}")
