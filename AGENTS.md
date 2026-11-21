@@ -14,6 +14,7 @@
 - 改動後執行 `python -m unittest discover -s tests`，全綠才提交（測試與 `git commit` 用 `&&` 串接，不用 `;`）。
 - 不要設 `PYTHONUTF8` 來讓測試通過；Windows 終端的編碼問題要在程式裡處理。
 - 格式或判讀規則有變，同步更新 `docs/health-bank-export-format.md`。
+- `README.en.md` 是 `README.md` 的英文鏡像；改 `README.md` 時同步改它。
 
 ## 路線圖
 

@@ -1,3 +1,5 @@
+[English](README.en.md) · 繁體中文
+
 # health-bank-toolkit
 
 把健保快易通「健康存摺」匯出的 HTML，**在本機離線**轉成脫敏後的結構化 JSON，再交給 AI 產出互動儀表板或 PDF 健康報告。
